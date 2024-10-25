@@ -18,14 +18,6 @@ st.title("Recomendaciones de Marketing Personalizadas con API de OpenAI")
 st.sidebar.header("Configuración de la API de OpenAI")
 openai_api_key = st.sidebar.text_input("Introduce tu API Key de OpenAI", type="password")
 
-# Check if the API key has been entered, set the API key for OpenAI
-if openai_api_key:
-    openai.api_key = openai_api_key
-    st.sidebar.success("API Key ingresada correctamente.")  # Success message for entering the key
-else:
-    st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
-    st.stop()  # Stop the app here until the API key is provided
-
 # Cargar archivo CSV
 st.sidebar.header("Carga tus datos de clientes")
 uploaded_file = st.sidebar.file_uploader("Sube un archivo CSV", type=["csv"])
@@ -104,7 +96,7 @@ if uploaded_file:
                     st.plotly_chart(fig)
 
                 # Botón para generar recomendaciones usando la API de OpenAI
-                if st.button("Generar Recomendaciones de Marketing"):
+                if openai_api_key and st.button("Generar Recomendaciones de Marketing"):
                     # Loop para cada perfil generado por K-means
                     for perfil in data['Perfil'].unique():
                         perfil_data = data[data['Perfil'] == perfil]
@@ -145,33 +137,5 @@ if uploaded_file:
 
                         except Exception as e:
                             st.error(f"Error en la solicitud a la API de OpenAI: {e}")
-
-                # Nueva funcionalidad para hacer preguntas sobre los datos
-                st.subheader("Pregúntale a los datos")
-                question = st.text_input("Escribe tu pregunta sobre los datos")
-
-                # Botón para hacer preguntas
-                if question and st.button("Obtener Respuesta a la Pregunta"):
-                    # Crear un resumen de los datos seleccionados para análisis
-                    data_summary = data[selected_features].describe(include='all').to_string()
-
-                    # Crear el mensaje para el API de OpenAI con la pregunta y el resumen de datos
-                    try:
-                        response = openai.ChatCompletion.create(
-                            model="gpt-3.5-turbo",
-                            messages=[
-                                {"role": "system", "content": "Eres un asistente de datos experto."},
-                                {
-                                    "role": "user",
-                                    "content": f"Los datos disponibles son:\n{data_summary}\nLa pregunta es: {question}."
-                                }
-                            ]
-                        )
-                        # Obtener y mostrar la respuesta
-                        answer = response.choices[0].message['content'].strip()
-                        st.write(f"### Respuesta: {answer}")
-
-                    except Exception as e:
-                        st.error(f"Error en la solicitud a la API de OpenAI: {e}")
-
-
+else:
+    st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
