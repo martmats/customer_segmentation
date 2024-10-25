@@ -131,7 +131,7 @@ if openai_api_key:
                                     {"role": "system", "content": "Eres un experto estratega y analista de datos que trabajas en una consultoria de marketing."},
                                     {
                                         "role": "user",
-                                        "content": f"Dado el siguiente perfil de clientes: {common_features}, por favor proporciona una recomendación de marketing digital dirigida a este perfil."
+                                        "content": f"Dado el siguiente perfil de clientes: {common_features}, por favor proporciona una recomendación de marketing digital dirigida a este perfil, una vez finalizado cada perfil pregunta si quiere saber algo mas acerca de sus datos"
                                     }
                                 ]
                             )
@@ -141,22 +141,8 @@ if openai_api_key:
                             st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
                             st.write(recommendation)
 
-                            # Agregar input para preguntas adicionales
-                            question = st.text_input(f"Pregunta adicional para el Perfil {perfil}", "")
-                            if question:
-                                # Enviar la pregunta al API de OpenAI
-                                follow_up_response = openai.ChatCompletion.create(
-                                    model="gpt-3.5-turbo",
-                                    messages=[
-                                        {"role": "system", "content": "Eres un experto estratega y analista de datos en marketing."},
-                                        {"role": "user", "content": f"Dado el perfil: {common_features}, me han preguntado: {question}"}
-                                    ]
-                                )
-                                follow_up_answer = follow_up_response.choices[0].message['content'].strip()
-                                st.write(f"**Respuesta a la pregunta para el Perfil {perfil}:**")
-                                st.write(follow_up_answer)
-
                         except Exception as e:
                             st.error(f"Error en la solicitud a la API de OpenAI: {e}")
 else:
     st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
+
