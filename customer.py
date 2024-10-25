@@ -83,7 +83,9 @@ if gemini_api_key:
                 # Simulación de recomendación de marketing con la API de Gemini
                 for perfil in data['Perfil'].unique():
                     perfil_data = data[data['Perfil'] == perfil]
+                    # Convertir valores a tipos compatibles con JSON
                     common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
+                    common_features = {k: (int(v) if isinstance(v, (int, float)) else str(v)) for k, v in common_features.items()}
                     
                     st.write(f"### Perfil {perfil}")
                     st.write("Características comunes:", common_features)
@@ -105,4 +107,5 @@ if gemini_api_key:
                         st.error(f"Error en la solicitud a la API de Gemini: {e}")
 else:
     st.warning("Por favor, ingresa tu API Key de Gemini para comenzar.")
+
 
