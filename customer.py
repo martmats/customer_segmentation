@@ -4,16 +4,16 @@ import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.cluster import KMeans
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.cluster import KMeans
 from sklearn.impute import SimpleImputer
 
 # Configuración de la página
-st.set_page_config(page_title="Segmentación de Clientes Elegante", layout="wide")
+st.set_page_config(page_title="Perfiles de Clientes Personalizados", layout="wide")
 
 # Título de la aplicación
-st.title("Segmentación de Clientes Personalizada con Gráficos Elegantes")
+st.title("Identificación de Perfiles de Clientes Personalizados")
 
 # Cargar archivo CSV
 st.sidebar.header("Carga tus datos de clientes")
@@ -22,7 +22,7 @@ uploaded_file = st.sidebar.file_uploader("Sube un archivo CSV", type=["csv"])
 if uploaded_file:
     # Leer archivo CSV
     data = pd.read_csv(uploaded_file)
-    
+
     # Permitir al usuario elegir cuántas filas cargar (por defecto 100)
     num_rows = st.sidebar.number_input("Número de filas a cargar", min_value=1, max_value=len(data), value=100)
     data = data.head(num_rows)  # Cargar solo las primeras N filas
@@ -32,15 +32,15 @@ if uploaded_file:
 
     # Selección de características para análisis
     st.sidebar.header("Selecciona las columnas para análisis")
-    selected_features = st.sidebar.multiselect("Selecciona las columnas para el análisis de segmentación", data.columns.tolist())
+    selected_features = st.sidebar.multiselect("Selecciona las columnas para el análisis de perfiles", data.columns.tolist())
 
     if selected_features:
         st.subheader(f"Análisis basado en las columnas seleccionadas: {', '.join(selected_features)}")
 
-        # Mostrar visualizaciones interactivas usando Plotly con colores atractivos
+        # Mostrar visualizaciones interactivas usando Plotly
         for feature in selected_features:
             if data[feature].dtype == 'object' or len(data[feature].unique()) < 10:  # Si es categórica o tiene pocos valores únicos
-                fig = px.bar(data, x=feature, color=feature, title=f"Distribución de {feature}", 
+                fig = px.bar(data, x=feature, title=f"Distribución de {feature}", 
                              color_discrete_sequence=px.colors.qualitative.Vivid)
                 st.plotly_chart(fig)
             else:
@@ -48,7 +48,7 @@ if uploaded_file:
                                    color_discrete_sequence=px.colors.sequential.Plasma)
                 st.plotly_chart(fig)
         
-        # Filtrar las columnas categóricas y numéricas
+        # Procesar los datos categóricos y numéricos
         categorical_features = [col for col in selected_features if data[col].dtype == 'object']
         numerical_features = [col for col in selected_features if data[col].dtype in ['int64', 'float64']]
         
@@ -60,44 +60,43 @@ if uploaded_file:
             ]
         )
         
-        # Asegurarse de imputar valores faltantes
-        data_selected = data[selected_features].copy()
-        imputer = SimpleImputer(strategy='mean')  # Imputar valores faltantes en numéricos
-        data_selected[numerical_features] = imputer.fit_transform(data_selected[numerical_features])
+        # Aplicar K-means para agrupar en perfiles
+        st.sidebar.header("Identificar Perfiles de Clientes")
+        n_segments = st.sidebar.slider("Número de perfiles (segmentos)", min_value=2, max_value=10, value=3)
         
-        # Verificar que no haya valores NaN o infinitos
-        if data_selected.isnull().sum().sum() == 0:
-            # Aplicar K-means para la segmentación
-            st.sidebar.header("Segmentación")
-            n_clusters = st.sidebar.slider("Selecciona el número de clusters", min_value=2, max_value=10, value=3)
+        if st.sidebar.button("Identificar Perfiles"):
+            # Crear un pipeline que aplique el preprocesamiento y K-means
+            kmeans = Pipeline(steps=[('preprocessor', preprocessor), ('kmeans', KMeans(n_clusters=n_segments, random_state=42))])
+            kmeans.fit(data[selected_features])
+            data['Perfil'] = kmeans.named_steps['kmeans'].labels_
             
-            if st.sidebar.button("Aplicar Segmentación"):
-                # Crear un pipeline que aplique el preprocesamiento y K-means
-                kmeans = Pipeline(steps=[('preprocessor', preprocessor), ('kmeans', KMeans(n_clusters=n_clusters, random_state=42))])
-                kmeans.fit(data_selected)
-                data['Cluster'] = kmeans.named_steps['kmeans'].labels_
+            st.subheader("Resultados de la Segmentación en Perfiles")
+            st.write("Los clientes han sido agrupados en los siguientes perfiles:")
+            st.dataframe(data[['Perfil'] + selected_features].head())
+            
+            # Gráficos de Perfiles (Distribución por perfil)
+            st.subheader("Distribución de Perfiles por Característica")
+            for feature in selected_features:
+                fig = px.bar(data, x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil",
+                             color='Perfil', barmode='group', 
+                             color_discrete_sequence=px.colors.qualitative.Vivid)
+                st.plotly_chart(fig)
+
+            # Generar sugerencias de marketing por perfil
+            st.subheader("Sugerencias de Marketing para Cada Perfil")
+            perfiles = data['Perfil'].unique()
+            for perfil in perfiles:
+                perfil_data = data[data['Perfil'] == perfil]
+                st.write(f"### Perfil {perfil}:")
+                st.write(f"Este grupo tiene un total de {len(perfil_data)} clientes.")
                 
-                st.subheader("Resultados de la Segmentación")
-                st.write("Los clientes han sido agrupados en los siguientes clusters:")
-                st.dataframe(data[['Cluster'] + selected_features].head())
+                # Características más comunes en este perfil
+                st.write(f"#### Características comunes en el Perfil {perfil}:")
+                for feature in selected_features:
+                    st.write(f"- {feature}: {perfil_data[feature].mode()[0]}")
                 
-                # Gráfico de clusters (si hay al menos dos características numéricas)
-                if len(numerical_features) >= 2:
-                    fig = px.scatter(data, x=numerical_features[0], y=numerical_features[1], color='Cluster',
-                                     color_continuous_scale=px.colors.sequential.Inferno, title="Clusters de Clientes")
-                    st.plotly_chart(fig)
-                
-                # Visualización de clusters usando Pairplot de Seaborn
-                st.subheader("Visualización detallada de los Clusters con Seaborn")
-                if len(selected_features) > 1:
-                    plt.figure(figsize=(10, 6))
-                    sns.pairplot(data, hue="Cluster", vars=numerical_features[:3], palette="coolwarm")
-                    st.pyplot(plt)
-                
-                st.write("""
-                ### Interpretación de los Clusters:
-                - Utiliza los grupos creados para identificar características comunes en los clientes.
-                - Ejemplo: Si descubres que un cluster está dominado por mujeres que poseen un coche en una región específica, puedes crear campañas de marketing dirigidas a esas características.
-                """)
-        else:
-            st.error("Hay valores nulos o inválidos en los datos seleccionados. Verifica e intenta nuevamente.")
+                # Sugerencia de marketing
+                st.write(f"#### Sugerencias de Marketing para el Perfil {perfil}:")
+                st.write("- Crear campañas dirigidas a las características más comunes en este grupo.")
+                st.write("- Ofrecer productos o servicios alineados con las preferencias de este perfil.")
+
