@@ -100,49 +100,50 @@ if openai_api_key:
                                          color_discrete_sequence=px.colors.qualitative.Vivid)
                         st.plotly_chart(fig)
 
-                    # Generar recomendaciones de marketing usando la API de OpenAI
+                    # Botón personalizado para generar recomendaciones de marketing usando la API de OpenAI
                     st.subheader("Generar Recomendaciones de Marketing")
+                    if st.button("📊 Generar Recomendaciones de Marketing", key="generate_recommendations"):
+                        st.markdown("<style>button[data-testid='stFormSubmitButton'] {background-color: #FF6F61; color: white;}</style>", unsafe_allow_html=True)
+                        # Loop para cada perfil generado por K-means
+                        for perfil in data['Perfil'].unique():
+                            perfil_data = data[data['Perfil'] == perfil]
+                            common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
 
-                    # Loop para cada perfil generado por K-means
-                    for perfil in data['Perfil'].unique():
-                        perfil_data = data[data['Perfil'] == perfil]
-                        common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
+                            # Convertir todos los tipos a str, int o float según sea necesario
+                            def convert_to_json_serializable(value):
+                                if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
+                                    return str(value)  # Convertir timestamps a string
+                                if isinstance(value, (np.integer, np.int32, np.int64)):
+                                    return int(value)  # Convertir enteros numpy a int
+                                if isinstance(value, (np.floating, np.float32, np.float64)):
+                                    return float(value)  # Convertir floats numpy a float
+                                if isinstance(value, (int, float)):
+                                    return value  # Int y float normales no necesitan conversión
+                                return str(value)  # Convertir otros tipos a string
 
-                        # Convertir todos los tipos a str, int o float según sea necesario
-                        def convert_to_json_serializable(value):
-                            if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
-                                return str(value)  # Convertir timestamps a string
-                            if isinstance(value, (np.integer, np.int32, np.int64)):
-                                return int(value)  # Convertir enteros numpy a int
-                            if isinstance(value, (np.floating, np.float32, np.float64)):
-                                return float(value)  # Convertir floats numpy a float
-                            if isinstance(value, (int, float)):
-                                return value  # Int y float normales no necesitan conversión
-                            return str(value)  # Convertir otros tipos a string
-
-                        # Aplicar la conversión
-                        common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
-                        
-                        # Crear el mensaje para el API de OpenAI
-                        try:
-                            response = openai.ChatCompletion.create(
-                                model="gpt-3.5-turbo",
-                                messages=[
-                                    {"role": "system", "content": "Eres un experto estratega y analista de datos que trabajas en una consultoria de marketing."},
-                                    {
-                                        "role": "user",
-                                        "content": f"Dado el siguiente perfil de clientes: {common_features}, da un nombre que defina a este perfil, explica como es este buyer persona y muestra una estrategia que debe incluir recomendaciones prácticas para alcanzar a este grupo, con tácticas de contenido, redes sociales, anuncios pagados, y estrategias de retención. Además, quiero que la estrategia sea aplicable para los próximos 3-6 meses y que incluya ideas de contenido, canales recomendados y métodos para medir el éxito. Por favor, proporciona sugerencias claras y que puedan entenderse fácilmente por un profesional de marketing."
-                                    }
-                                ]
-                            )
+                            # Aplicar la conversión
+                            common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
                             
-                            # Obtener y mostrar la recomendación
-                            recommendation = response.choices[0].message['content'].strip()
-                            st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
-                            st.write(recommendation)
+                            # Crear el mensaje para el API de OpenAI
+                            try:
+                                response = openai.ChatCompletion.create(
+                                    model="gpt-3.5-turbo",
+                                    messages=[
+                                        {"role": "system", "content": "Eres un experto estratega y analista de datos que trabajas en una consultoria de marketing."},
+                                        {
+                                            "role": "user",
+                                            "content": f"Dado el siguiente perfil de clientes: {common_features}, da un nombre que defina a este perfil, explica como es este buyer persona y muestra una estrategia que debe incluir recomendaciones prácticas para alcanzar a este grupo, con tácticas de contenido, redes sociales, anuncios pagados, y estrategias de retención. Además, quiero que la estrategia sea aplicable para los próximos 3-6 meses y que incluya ideas de contenido, canales recomendados y métodos para medir el éxito. Por favor, proporciona sugerencias claras y que puedan entenderse fácilmente por un profesional de marketing."
+                                        }
+                                    ]
+                                )
+                                
+                                # Obtener y mostrar la recomendación
+                                recommendation = response.choices[0].message['content'].strip()
+                                st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
+                                st.write(recommendation)
 
-                        except Exception as e:
-                            st.error(f"Error en la solicitud a la API de OpenAI: {e}")
+                            except Exception as e:
+                                st.error(f"Error en la solicitud a la API de OpenAI: {e}")
 else:
     st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
 
