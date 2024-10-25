@@ -72,9 +72,17 @@ if gemini_api_key:
                 # Gráficos de Perfiles (Distribución por perfil)
                 st.subheader("Distribución de Perfiles por Característica")
                 for feature in selected_features:
-                    fig = px.bar(data, x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil",
-                                 color='Perfil', barmode='group', 
-                                 color_discrete_sequence=px.colors.qualitative.Vivid)
+                    if feature in numerical_features:
+                        # Mostrar el promedio en lugar de la suma
+                        fig = px.bar(data.groupby('Perfil')[feature].mean().reset_index(), 
+                                     x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil (Promedio)",
+                                     color='Perfil', barmode='group', 
+                                     color_discrete_sequence=px.colors.qualitative.Vivid)
+                    else:
+                        # Para variables categóricas
+                        fig = px.bar(data, x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil",
+                                     color='Perfil', barmode='group', 
+                                     color_discrete_sequence=px.colors.qualitative.Vivid)
                     st.plotly_chart(fig)
 
                 # Generar recomendaciones de marketing usando la API de Gemini
@@ -85,7 +93,9 @@ if gemini_api_key:
                     perfil_data = data[data['Perfil'] == perfil]
                     # Convertir valores a tipos compatibles con JSON
                     common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
-                    common_features = {k: (int(v) if isinstance(v, (int, float)) else str(v)) for k, v in common_features.items()}
+                    
+                    # Convertir tipos numéricos explícitamente a int o float
+                    common_features = {k: (int(v) if isinstance(v, (int, float)) and not pd.isna(v) else str(v)) for k, v in common_features.items()}
                     
                     st.write(f"### Perfil {perfil}")
                     st.write("Características comunes:", common_features)
