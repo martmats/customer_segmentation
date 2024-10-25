@@ -18,6 +18,14 @@ st.title("Recomendaciones de Marketing Personalizadas con API de OpenAI")
 st.sidebar.header("Configuración de la API de OpenAI")
 openai_api_key = st.sidebar.text_input("Introduce tu API Key de OpenAI", type="password")
 
+# Check if the API key has been entered, set the API key for OpenAI
+if openai_api_key:
+    openai.api_key = openai_api_key
+    st.sidebar.success("API Key ingresada correctamente.")  # Success message for entering the key
+else:
+    st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
+    st.stop()  # Stop the app here until the API key is provided
+
 # Cargar archivo CSV
 st.sidebar.header("Carga tus datos de clientes")
 uploaded_file = st.sidebar.file_uploader("Sube un archivo CSV", type=["csv"])
@@ -96,7 +104,7 @@ if uploaded_file:
                     st.plotly_chart(fig)
 
                 # Botón para generar recomendaciones usando la API de OpenAI
-                if openai_api_key and st.button("Generar Recomendaciones de Marketing"):
+                if st.button("Generar Recomendaciones de Marketing"):
                     # Loop para cada perfil generado por K-means
                     for perfil in data['Perfil'].unique():
                         perfil_data = data[data['Perfil'] == perfil]
@@ -143,7 +151,7 @@ if uploaded_file:
                 question = st.text_input("Escribe tu pregunta sobre los datos")
 
                 # Botón para hacer preguntas
-                if question and openai_api_key and st.button("Obtener Respuesta a la Pregunta"):
+                if question and st.button("Obtener Respuesta a la Pregunta"):
                     # Crear un resumen de los datos seleccionados para análisis
                     data_summary = data[selected_features].describe(include='all').to_string()
 
@@ -165,6 +173,4 @@ if uploaded_file:
 
                     except Exception as e:
                         st.error(f"Error en la solicitud a la API de OpenAI: {e}")
-else:
-    st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
 
