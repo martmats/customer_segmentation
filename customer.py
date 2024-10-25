@@ -112,7 +112,7 @@ if openai_api_key:
                     
                     # Crear el mensaje para el API de OpenAI
                     try:
-                        response = openai.chat.completions.create(
+                        response = openai.ChatCompletion.create(
                             model="gpt-3.5-turbo",
                             messages=[
                                 {"role": "system", "content": "Eres un experto en marketing."},
@@ -122,7 +122,10 @@ if openai_api_key:
                                 }
                             ]
                         )
-                        recommendation = response['choices'][0]['message']['content'].strip()
+                        
+                        # Correct way to access content in ChatCompletion response
+                        recommendation = response.choices[0].message['content'].strip()
+
                         st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
                         st.write(recommendation)
 
@@ -130,4 +133,3 @@ if openai_api_key:
                         st.error(f"Error en la solicitud a la API de OpenAI: {e}")
 else:
     st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
-
