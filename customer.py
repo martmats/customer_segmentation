@@ -102,13 +102,16 @@ if openai_api_key:
 
                     # Botón personalizado para generar recomendaciones de marketing usando la API de OpenAI
                     st.subheader("Generar Recomendaciones de Marketing")
-                    if st.button("📊 Generar Recomendaciones de Marketing", key="generate_recommendations"):
-                        st.markdown("<style>button[data-testid='stFormSubmitButton'] {background-color: #FF6F61; color: white;}</style>", unsafe_allow_html=True)
+                    
+                    # Verificar si el usuario ha hecho clic en el botón
+                    if st.button("📊 Generar Recomendaciones de Marketing"):
+                        st.markdown("<style>button[data-testid='stButton'] {background-color: #FF6F61; color: white;}</style>", unsafe_allow_html=True)
+                        
                         # Loop para cada perfil generado por K-means
                         for perfil in data['Perfil'].unique():
                             perfil_data = data[data['Perfil'] == perfil]
                             common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
-
+                    
                             # Convertir todos los tipos a str, int o float según sea necesario
                             def convert_to_json_serializable(value):
                                 if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
@@ -120,7 +123,7 @@ if openai_api_key:
                                 if isinstance(value, (int, float)):
                                     return value  # Int y float normales no necesitan conversión
                                 return str(value)  # Convertir otros tipos a string
-
+                    
                             # Aplicar la conversión
                             common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
                             
@@ -141,9 +144,10 @@ if openai_api_key:
                                 recommendation = response.choices[0].message['content'].strip()
                                 st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
                                 st.write(recommendation)
-
+                    
                             except Exception as e:
                                 st.error(f"Error en la solicitud a la API de OpenAI: {e}")
+
 else:
     st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
 
