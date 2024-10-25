@@ -89,20 +89,26 @@ if openai_api_key:
                     for feature in selected_features:
                         if feature in numerical_features:
                             # Mostrar el promedio en lugar de la suma
-                            fig = px.bar(data.groupby('Perfil')[feature].mean().reset_index(), 
-                                         x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil (Promedio)",
-                                         color='Perfil', barmode='group', 
-                                         color_discrete_sequence=px.colors.qualitative.Vivid)
+                            fig = px.bar(
+                                data.groupby('Perfil')[feature].mean().reset_index(), 
+                                x='Perfil', y=feature, 
+                                title=f"Distribución de {feature} por Perfil (Promedio)",
+                                color='Perfil', barmode='group', 
+                                color_discrete_sequence=px.colors.qualitative.Vivid
+                            )
                         else:
                             # Para variables categóricas
-                            fig = px.bar(data, x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil",
-                                         color='Perfil', barmode='group', 
-                                         color_discrete_sequence=px.colors.qualitative.Vivid)
+                            fig = px.bar(
+                                data, x='Perfil', y=feature, 
+                                title=f"Distribución de {feature} por Perfil",
+                                color='Perfil', barmode='group', 
+                                color_discrete_sequence=px.colors.qualitative.Vivid
+                            )
                         st.plotly_chart(fig)
 
                     # Botón personalizado para generar recomendaciones de marketing usando la API de OpenAI
                     st.subheader("Generar Recomendaciones de Marketing")
-                    
+
                     # Verificar si el usuario ha hecho clic en el botón
                     if st.button("📊 Generar Recomendaciones de Marketing"):
                         st.markdown("<style>button[data-testid='stButton'] {background-color: #FF6F61; color: white;}</style>", unsafe_allow_html=True)
@@ -111,7 +117,7 @@ if openai_api_key:
                         for perfil in data['Perfil'].unique():
                             perfil_data = data[data['Perfil'] == perfil]
                             common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
-                    
+
                             # Convertir todos los tipos a str, int o float según sea necesario
                             def convert_to_json_serializable(value):
                                 if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
@@ -123,7 +129,7 @@ if openai_api_key:
                                 if isinstance(value, (int, float)):
                                     return value  # Int y float normales no necesitan conversión
                                 return str(value)  # Convertir otros tipos a string
-                    
+
                             # Aplicar la conversión
                             common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
                             
@@ -144,10 +150,10 @@ if openai_api_key:
                                 recommendation = response.choices[0].message['content'].strip()
                                 st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
                                 st.write(recommendation)
-                    
+
                             except Exception as e:
                                 st.error(f"Error en la solicitud a la API de OpenAI: {e}")
-
 else:
     st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
+
 
