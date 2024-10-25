@@ -1,18 +1,18 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 
 # Configuración de la página
-st.set_page_config(page_title="Segmentación Predictiva de Clientes", layout="wide")
+st.set_page_config(page_title="Segmentación de Clientes Personalizada", layout="wide")
 
 # Título de la aplicación
-st.title("Segmentación Predictiva de Clientes: De Storytelling a Predicción")
+st.title("Segmentación de Clientes Personalizada")
 
 # Cargar archivo CSV
 st.sidebar.header("Carga tus datos de clientes")
@@ -21,87 +21,70 @@ uploaded_file = st.sidebar.file_uploader("Sube un archivo CSV", type=["csv"])
 if uploaded_file:
     # Leer archivo CSV
     data = pd.read_csv(uploaded_file)
-    st.subheader("Datos Cargados")
+    
+    # Permitir al usuario elegir cuántas filas cargar (por defecto 100)
+    num_rows = st.sidebar.number_input("Número de filas a cargar", min_value=1, max_value=len(data), value=100)
+    data = data.head(num_rows)  # Cargar solo las primeras N filas
+
+    st.subheader(f"Datos Cargados (mostrando las primeras {num_rows} filas)")
     st.write(data.head())
 
-    # Storytelling: Segmentación de Clientes
-    st.header("Storytelling: Segmentación de Clientes")
-    st.write("Visualización interactiva para entender mejor los grupos de clientes")
+    # Selección de características para análisis
+    st.sidebar.header("Selecciona las columnas para análisis")
+    selected_features = st.sidebar.multiselect("Selecciona las columnas para el análisis de segmentación", data.columns.tolist())
 
-    # Selección de columnas
-    features = st.multiselect("Selecciona las columnas para la segmentación", data.columns.tolist())
+    if selected_features:
+        st.subheader(f"Análisis basado en las columnas seleccionadas: {', '.join(selected_features)}")
 
-    if features:
-        # Filtrar columnas numéricas solamente
-        data_selected = data[features].select_dtypes(include=['number']).dropna()  # Seleccionar solo datos numéricos y eliminar filas nulas
-
-        if data_selected.empty:
-            st.error("Por favor, selecciona al menos una columna numérica para realizar la segmentación.")
-        else:
-            # Escalar los datos
-            scaler = StandardScaler()
-            data_scaled = scaler.fit_transform(data_selected)
-
-            # Selección del número de clusters
-            num_clusters = st.slider("Selecciona el número de clusters (K)", min_value=2, max_value=10, value=3)
-
-            # Aplicar K-means
-            kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-            clusters = kmeans.fit_predict(data_scaled)
-            data_selected["Cluster"] = clusters
-
-            # Visualización de los clusters
-            st.subheader("Visualización de los Segmentos de Clientes")
-            plt.figure(figsize=(10, 6))
-            sns.scatterplot(x=data_scaled[:, 0], y=data_scaled[:, 1], hue=clusters, palette="viridis")
-            plt.title("Clusters de Clientes")
-            st.pyplot(plt)
-
-            # Características de los clusters
-            st.subheader("Características de los Clusters")
-            st.write(data_selected.groupby("Cluster").mean())
-
-            # Storytelling sobre los clusters
+        # Mostrar visualizaciones interactivas usando Plotly
+        for feature in selected_features:
+            if data[feature].dtype == 'object' or len(data[feature].unique()) < 10:  # Si es categórica o tiene pocos valores únicos
+                fig = px.bar(data, x=feature, title=f"Distribución de {feature}")
+                st.plotly_chart(fig)
+            else:
+                fig = px.histogram(data, x=feature, nbins=20, title=f"Distribución de {feature}")
+                st.plotly_chart(fig)
+        
+        # Filtrar las columnas categóricas y numéricas
+        categorical_features = [col for col in selected_features if data[col].dtype == 'object']
+        numerical_features = [col for col in selected_features if data[col].dtype in ['int64', 'float64']]
+        
+        # Procesar los datos usando OneHotEncoding para categóricas y escalado para numéricas
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ('num', StandardScaler(), numerical_features),
+                ('cat', OneHotEncoder(), categorical_features)
+            ]
+        )
+        
+        # Aplicar K-means para la segmentación
+        st.sidebar.header("Segmentación")
+        n_clusters = st.sidebar.slider("Selecciona el número de clusters", min_value=2, max_value=10, value=3)
+        
+        if st.sidebar.button("Aplicar Segmentación"):
+            # Crear un pipeline que aplique el preprocesamiento y K-means
+            kmeans = Pipeline(steps=[('preprocessor', preprocessor), ('kmeans', KMeans(n_clusters=n_clusters, random_state=42))])
+            kmeans.fit(data[selected_features])
+            data['Cluster'] = kmeans.named_steps['kmeans'].labels_
+            
+            st.subheader("Resultados de la Segmentación")
+            st.write("Los clientes han sido agrupados en los siguientes clusters:")
+            st.dataframe(data[['Cluster'] + selected_features].head())
+            
+            # Gráfico de clusters (si hay al menos dos características numéricas)
+            if len(numerical_features) >= 2:
+                fig = px.scatter(data, x=numerical_features[0], y=numerical_features[1], color='Cluster', title="Clusters de Clientes")
+                st.plotly_chart(fig)
+            
+            # Visualización de clusters usando Pairplot
+            st.subheader("Visualización detallada de los Clusters")
+            if len(selected_features) > 1:
+                sns.pairplot(data, hue="Cluster", vars=selected_features[:3], palette="viridis")
+                st.pyplot(plt)
+            
             st.write("""
-            ### Insights clave:
-            - El análisis de clustering nos permite visualizar cómo se agrupan los clientes en función de sus comportamientos y características.
-            - Con esto, puedes identificar segmentos específicos como "clientes de alto valor" o "clientes con bajo nivel de compromiso".
-            - Esta información es útil para estrategias de marketing personalizadas y la mejora de la relación con los clientes.
+            ### Interpretación de los Clusters:
+            - Utiliza los grupos creados para identificar características comunes en los clientes.
+            - Ejemplo: Si descubres que un cluster está dominado por mujeres que poseen un coche en una región específica, puedes crear campañas de marketing dirigidas a esas características.
             """)
-
-            # Predicción del Comportamiento Futuro
-            st.header("Predicción: ¿Cómo será el comportamiento futuro de los clientes?")
-            st.write("""
-            Ahora que hemos segmentado a los clientes, podemos entrenar un modelo predictivo que nos ayude a anticipar comportamientos como:
-            - ¿Realizará este cliente una gran compra?
-            - ¿Es probable que este cliente abandone?
-            """)
-
-            # Selección de la columna objetivo (variable dependiente para la predicción)
-            target_column = st.selectbox("Selecciona la columna objetivo para la predicción", data.columns)
-
-            # Entrenar el modelo predictivo
-            if target_column:
-                X = data_selected.drop(columns=["Cluster"])
-                y = data[target_column].dropna()
-
-                # Dividir datos en entrenamiento y prueba
-                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-                # Modelo de predicción (Random Forest)
-                model = RandomForestClassifier(random_state=42)
-                model.fit(X_train, y_train)
-                y_pred = model.predict(X_test)
-
-                # Mostrar precisión del modelo
-                accuracy = accuracy_score(y_test, y_pred)
-                st.subheader(f"Precisión del modelo: {accuracy:.2%}")
-
-                # Visualización de la importancia de las características
-                feature_importance = pd.DataFrame(model.feature_importances_, index=X.columns, columns=["Importancia"])
-                feature_importance = feature_importance.sort_values(by="Importancia", ascending=False)
-                st.subheader("Importancia de las características en la predicción")
-                st.bar_chart(feature_importance)
-
-                st.write("Con estos insights, puedes anticipar mejor las decisiones de tus clientes y ajustar tus estrategias de negocio.")
 
