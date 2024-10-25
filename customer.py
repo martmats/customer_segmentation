@@ -100,61 +100,61 @@ if openai_api_key:
                                          color_discrete_sequence=px.colors.qualitative.Vivid)
                         st.plotly_chart(fig)
 
-# Generar recomendaciones de marketing usando la API de OpenAI
-st.subheader("Generar Recomendaciones de Marketing")
-
-# Loop para cada perfil generado por K-means
-for perfil in data['Perfil'].unique():
-    perfil_data = data[data['Perfil'] == perfil]
-    common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
-
-    # Convertir todos los tipos a str, int o float según sea necesario
-    def convert_to_json_serializable(value):
-        if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
-            return str(value)  # Convertir timestamps a string
-        if isinstance(value, (np.integer, np.int32, np.int64)):
-            return int(value)  # Convertir enteros numpy a int
-        if isinstance(value, (np.floating, np.float32, np.float64)):
-            return float(value)  # Convertir floats numpy a float
-        if isinstance(value, (int, float)):
-            return value  # Int y float normales no necesitan conversión
-        return str(value)  # Convertir otros tipos a string
-
-    # Aplicar la conversión
-    common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
-
-    # Crear el mensaje para el API de OpenAI
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Eres un experto estratega y analista de datos que trabajas en una consultoria de marketing."},
-                {
-                    "role": "user",
-                    "content": f"Dado el siguiente perfil de clientes: {common_features}, por favor proporciona una recomendación de marketing digital dirigida a este perfil."
-                }
-            ]
-        )
-
-        # Obtener y mostrar la recomendación
-        recommendation = response.choices[0].message['content'].strip()
-        st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
-        st.write(recommendation)
-
-        # Agregar input para preguntas adicionales
-        question = st.text_input(f"Pregunta adicional para el Perfil {perfil}", "")
-        if question:
-            # Enviar la pregunta al API de OpenAI
-            follow_up_response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Eres un experto estratega y analista de datos en marketing."},
-                    {"role": "user", "content": f"Dado el perfil: {common_features}, me han preguntado: {question}"}
-                ]
-            )
-            follow_up_answer = follow_up_response.choices[0].message['content'].strip()
-            st.write(f"**Respuesta a la pregunta para el Perfil {perfil}:**")
-            st.write(follow_up_answer)
+                    # Generar recomendaciones de marketing usando la API de OpenAI
+                    st.subheader("Generar Recomendaciones de Marketing")
+                    
+                    # Loop para cada perfil generado por K-means
+                    for perfil in data['Perfil'].unique():
+                        perfil_data = data[data['Perfil'] == perfil]
+                        common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
+                    
+                        # Convertir todos los tipos a str, int o float según sea necesario
+                        def convert_to_json_serializable(value):
+                            if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
+                                return str(value)  # Convertir timestamps a string
+                            if isinstance(value, (np.integer, np.int32, np.int64)):
+                                return int(value)  # Convertir enteros numpy a int
+                            if isinstance(value, (np.floating, np.float32, np.float64)):
+                                return float(value)  # Convertir floats numpy a float
+                            if isinstance(value, (int, float)):
+                                return value  # Int y float normales no necesitan conversión
+                            return str(value)  # Convertir otros tipos a string
+                    
+                        # Aplicar la conversión
+                        common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
+                    
+                        # Crear el mensaje para el API de OpenAI
+                        try:
+                            response = openai.ChatCompletion.create(
+                                model="gpt-3.5-turbo",
+                                messages=[
+                                    {"role": "system", "content": "Eres un experto estratega y analista de datos que trabajas en una consultoria de marketing."},
+                                    {
+                                        "role": "user",
+                                        "content": f"Dado el siguiente perfil de clientes: {common_features}, por favor proporciona una recomendación de marketing digital dirigida a este perfil."
+                                    }
+                                ]
+                            )
+                    
+                            # Obtener y mostrar la recomendación
+                            recommendation = response.choices[0].message['content'].strip()
+                            st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
+                            st.write(recommendation)
+                    
+                            # Agregar input para preguntas adicionales
+                            question = st.text_input(f"Pregunta adicional para el Perfil {perfil}", "")
+                            if question:
+                                # Enviar la pregunta al API de OpenAI
+                                follow_up_response = openai.ChatCompletion.create(
+                                    model="gpt-3.5-turbo",
+                                    messages=[
+                                        {"role": "system", "content": "Eres un experto estratega y analista de datos en marketing."},
+                                        {"role": "user", "content": f"Dado el perfil: {common_features}, me han preguntado: {question}"}
+                                    ]
+                                )
+                                follow_up_answer = follow_up_response.choices[0].message['content'].strip()
+                                st.write(f"**Respuesta a la pregunta para el Perfil {perfil}:**")
+                                st.write(follow_up_answer)
 
     except Exception as e:
         st.error(f"Error en la solicitud a la API de OpenAI: {e}")
