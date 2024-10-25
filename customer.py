@@ -131,7 +131,7 @@ if openai_api_key:
                                     {"role": "system", "content": "Eres un experto estratega y analista de datos que trabajas en una consultoria de marketing."},
                                     {
                                         "role": "user",
-                                        "content": f"Dado el siguiente perfil de clientes: {common_features}, La estrategia debe incluir recomendaciones prácticas para alcanzar a este grupo, con tácticas de contenido, redes sociales, anuncios pagados, y estrategias de retención. Además, quiero que la estrategia sea aplicable para los próximos 3-6 meses y que incluya ideas de contenido, canales recomendados y métodos para medir el éxito. Por favor, proporciona sugerencias claras y que puedan entenderse fácilmente por un profesional de marketing."
+                                        "content": f"Dado el siguiente perfil de clientes: {common_features}, da un nombre a este perfil y muestra una estrategia que incluya incluir recomendaciones prácticas para alcanzar a este grupo, con tácticas de contenido, redes sociales, anuncios pagados, y estrategias de retención. Además, quiero que la estrategia sea aplicable para los próximos 3-6 meses y que incluya ideas de contenido, canales recomendados y métodos para medir el éxito. Por favor, proporciona sugerencias claras y que puedan entenderse fácilmente por un profesional de marketing."
                                     }
                                 ]
                             )
