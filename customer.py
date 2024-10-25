@@ -18,85 +18,91 @@ st.title("Recomendaciones de Marketing Personalizadas con API de OpenAI")
 st.sidebar.header("Configuración de la API de OpenAI")
 openai_api_key = st.sidebar.text_input("Introduce tu API Key de OpenAI", type="password")
 
-# Cargar archivo CSV
-st.sidebar.header("Carga tus datos de clientes")
-uploaded_file = st.sidebar.file_uploader("Sube un archivo CSV", type=["csv"])
+# Verificar si la API Key está ingresada
+if openai_api_key:
+    st.sidebar.success("API Key ingresada correctamente.")
+    openai.api_key = openai_api_key
 
-# Agregar opción para seleccionar delimitador
-delimiter = st.sidebar.selectbox(
-    "Selecciona el delimitador utilizado en tu archivo CSV",
-    [",", ";", "\t", "|"]
-)
+    # Cargar archivo CSV
+    st.sidebar.header("Carga tus datos de clientes")
+    uploaded_file = st.sidebar.file_uploader("Sube un archivo CSV", type=["csv"])
 
-if uploaded_file:
-    # Intentar cargar el archivo CSV con control de errores y delimitador seleccionado
-    try:
-        data = pd.read_csv(uploaded_file, delimiter=delimiter, on_bad_lines='skip', encoding='utf-8')
-    except Exception as e:
-        st.error(f"Error loading CSV: {e}")
-        # Intentar con una codificación alternativa
+    # Agregar opción para seleccionar delimitador
+    delimiter = st.sidebar.selectbox(
+        "Selecciona el delimitador utilizado en tu archivo CSV",
+        [",", ";", "\t", "|"]
+    )
+
+    if uploaded_file:
+        # Intentar cargar el archivo CSV con control de errores y delimitador seleccionado
         try:
-            data = pd.read_csv(uploaded_file, delimiter=delimiter, on_bad_lines='skip', encoding='latin1')
+            data = pd.read_csv(uploaded_file, delimiter=delimiter, on_bad_lines='skip', encoding='utf-8')
         except Exception as e:
-            st.error(f"Unable to read CSV with default methods. Error: {e}")
-            data = None
+            st.error(f"Error loading CSV: {e}")
+            # Intentar con una codificación alternativa
+            try:
+                data = pd.read_csv(uploaded_file, delimiter=delimiter, on_bad_lines='skip', encoding='latin1')
+            except Exception as e:
+                st.error(f"Unable to read CSV with default methods. Error: {e}")
+                data = None
 
-    # Mostrar los datos si se cargan correctamente
-    if data is not None:
-        st.subheader(f"Datos Cargados (mostrando las primeras filas)")
-        st.write(data.head())
-        
-        # Selección de características para análisis
-        st.sidebar.header("Selecciona las columnas para análisis")
-        selected_features = st.sidebar.multiselect("Selecciona las columnas para el análisis de perfiles", data.columns.tolist())
+        # Mostrar los datos si se cargan correctamente
+        if data is not None:
+            st.subheader(f"Datos Cargados (mostrando las primeras filas)")
+            st.write(data.head())
+            
+            # Selección de características para análisis
+            st.sidebar.header("Selecciona las columnas para análisis")
+            selected_features = st.sidebar.multiselect("Selecciona las columnas para el análisis de perfiles", data.columns.tolist())
 
-        if selected_features:
-            st.subheader(f"Análisis basado en las columnas seleccionadas: {', '.join(selected_features)}")
+            if selected_features:
+                st.subheader(f"Análisis basado en las columnas seleccionadas: {', '.join(selected_features)}")
 
-            # Procesar datos categóricos y numéricos
-            categorical_features = [col for col in selected_features if data[col].dtype == 'object']
-            numerical_features = [col for col in selected_features if data[col].dtype in ['int64', 'float64']]
-            
-            # Procesar los datos usando OneHotEncoding para categóricas y escalado para numéricas
-            preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', StandardScaler(), numerical_features),
-                    ('cat', OneHotEncoder(), categorical_features)
-                ]
-            )
-            
-            # Aplicar K-means para agrupar en perfiles
-            st.sidebar.header("Identificar Perfiles de Clientes")
-            n_segments = st.sidebar.slider("Número de perfiles (segmentos)", min_value=2, max_value=10, value=3)
-            
-            if st.sidebar.button("Identificar Perfiles"):
-                # Crear un pipeline que aplique el preprocesamiento y K-means
-                kmeans = Pipeline(steps=[('preprocessor', preprocessor), ('kmeans', KMeans(n_clusters=n_segments, random_state=42))])
-                kmeans.fit(data[selected_features])
-                data['Perfil'] = kmeans.named_steps['kmeans'].labels_
+                # Procesar datos categóricos y numéricos
+                categorical_features = [col for col in selected_features if data[col].dtype == 'object']
+                numerical_features = [col for col in selected_features if data[col].dtype in ['int64', 'float64']]
                 
-                st.subheader("Resultados de la Segmentación en Perfiles")
-                st.write("Los clientes han sido agrupados en los siguientes perfiles:")
-                st.dataframe(data[['Perfil'] + selected_features].head())
+                # Procesar los datos usando OneHotEncoding para categóricas y escalado para numéricas
+                preprocessor = ColumnTransformer(
+                    transformers=[
+                        ('num', StandardScaler(), numerical_features),
+                        ('cat', OneHotEncoder(), categorical_features)
+                    ]
+                )
                 
-                # Gráficos de Perfiles (Distribución por perfil)
-                st.subheader("Distribución de Perfiles por Característica")
-                for feature in selected_features:
-                    if feature in numerical_features:
-                        # Mostrar el promedio en lugar de la suma
-                        fig = px.bar(data.groupby('Perfil')[feature].mean().reset_index(), 
-                                     x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil (Promedio)",
-                                     color='Perfil', barmode='group', 
-                                     color_discrete_sequence=px.colors.qualitative.Vivid)
-                    else:
-                        # Para variables categóricas
-                        fig = px.bar(data, x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil",
-                                     color='Perfil', barmode='group', 
-                                     color_discrete_sequence=px.colors.qualitative.Vivid)
-                    st.plotly_chart(fig)
+                # Aplicar K-means para agrupar en perfiles
+                st.sidebar.header("Identificar Perfiles de Clientes")
+                n_segments = st.sidebar.slider("Número de perfiles (segmentos)", min_value=2, max_value=10, value=3)
+                
+                if st.sidebar.button("Identificar Perfiles"):
+                    # Crear un pipeline que aplique el preprocesamiento y K-means
+                    kmeans = Pipeline(steps=[('preprocessor', preprocessor), ('kmeans', KMeans(n_clusters=n_segments, random_state=42))])
+                    kmeans.fit(data[selected_features])
+                    data['Perfil'] = kmeans.named_steps['kmeans'].labels_
+                    
+                    st.subheader("Resultados de la Segmentación en Perfiles")
+                    st.write("Los clientes han sido agrupados en los siguientes perfiles:")
+                    st.dataframe(data[['Perfil'] + selected_features].head())
+                    
+                    # Gráficos de Perfiles (Distribución por perfil)
+                    st.subheader("Distribución de Perfiles por Característica")
+                    for feature in selected_features:
+                        if feature in numerical_features:
+                            # Mostrar el promedio en lugar de la suma
+                            fig = px.bar(data.groupby('Perfil')[feature].mean().reset_index(), 
+                                         x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil (Promedio)",
+                                         color='Perfil', barmode='group', 
+                                         color_discrete_sequence=px.colors.qualitative.Vivid)
+                        else:
+                            # Para variables categóricas
+                            fig = px.bar(data, x='Perfil', y=feature, title=f"Distribución de {feature} por Perfil",
+                                         color='Perfil', barmode='group', 
+                                         color_discrete_sequence=px.colors.qualitative.Vivid)
+                        st.plotly_chart(fig)
 
-                # Botón para generar recomendaciones usando la API de OpenAI
-                if openai_api_key and st.button("Generar Recomendaciones de Marketing"):
+                    # Generar recomendaciones de marketing usando la API de OpenAI
+                    st.subheader("Generar Recomendaciones de Marketing")
+
                     # Loop para cada perfil generado por K-means
                     for perfil in data['Perfil'].unique():
                         perfil_data = data[data['Perfil'] == perfil]
