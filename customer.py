@@ -156,5 +156,5 @@ if openai_api_key:
                                 st.write(f"**Respuesta a la pregunta para el Perfil {perfil}:**")
                                 st.write(follow_up_answer)
 
-    except Exception as e:
+        except Exception as e:
         st.error(f"Error en la solicitud a la API de OpenAI: {e}")
