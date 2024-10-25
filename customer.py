@@ -27,15 +27,21 @@ if openai_api_key:
     st.sidebar.header("Carga tus datos de clientes")
     uploaded_file = st.sidebar.file_uploader("Sube un archivo CSV", type=["csv"])
 
+    # Agregar opción para seleccionar delimitador
+    delimiter = st.sidebar.selectbox(
+        "Selecciona el delimitador utilizado en tu archivo CSV",
+        [",", ";", "\t", "|"]
+    )
+
     if uploaded_file:
-        # Intentar cargar el archivo CSV con control de errores
+        # Intentar cargar el archivo CSV con control de errores y delimitador seleccionado
         try:
-            data = pd.read_csv(uploaded_file, delimiter=',', on_bad_lines='skip', encoding='utf-8')
+            data = pd.read_csv(uploaded_file, delimiter=delimiter, on_bad_lines='skip', encoding='utf-8')
         except Exception as e:
             st.error(f"Error loading CSV: {e}")
             # Intentar con una codificación alternativa
             try:
-                data = pd.read_csv(uploaded_file, delimiter=',', on_bad_lines='skip', encoding='latin1')
+                data = pd.read_csv(uploaded_file, delimiter=delimiter, on_bad_lines='skip', encoding='latin1')
             except Exception as e:
                 st.error(f"Unable to read CSV with default methods. Error: {e}")
                 data = None
@@ -139,3 +145,4 @@ if openai_api_key:
                             st.error(f"Error en la solicitud a la API de OpenAI: {e}")
 else:
     st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
+
