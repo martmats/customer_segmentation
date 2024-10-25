@@ -94,8 +94,18 @@ if gemini_api_key:
                     # Convertir valores a tipos compatibles con JSON
                     common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
                     
-                    # Convertir tipos numéricos explícitamente a int o float
-                    common_features = {k: (int(v) if isinstance(v, (int, float)) and not pd.isna(v) else str(v)) for k, v in common_features.items()}
+                    # Convertir todos los tipos a str, int o float según sea necesario
+                    def convert_to_json_serializable(value):
+                        if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
+                            return str(value)  # Convertir timestamps a string
+                        if isinstance(value, (pd.Int64Dtype, pd.Float64Dtype, pd.UInt8Dtype)):
+                            return int(value)
+                        if isinstance(value, (int, float)):
+                            return value
+                        return str(value)  # Convertir otros tipos a string
+                    
+                    # Aplicar la conversión
+                    common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
                     
                     st.write(f"### Perfil {perfil}")
                     st.write("Características comunes:", common_features)
@@ -117,5 +127,3 @@ if gemini_api_key:
                         st.error(f"Error en la solicitud a la API de Gemini: {e}")
 else:
     st.warning("Por favor, ingresa tu API Key de Gemini para comenzar.")
-
-
