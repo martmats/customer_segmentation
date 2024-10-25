@@ -102,12 +102,12 @@ if openai_api_key:
 
                     # Generar recomendaciones de marketing usando la API de OpenAI
                     st.subheader("Generar Recomendaciones de Marketing")
-                    
+
                     # Loop para cada perfil generado por K-means
                     for perfil in data['Perfil'].unique():
                         perfil_data = data[data['Perfil'] == perfil]
                         common_features = {feature: perfil_data[feature].mode()[0] for feature in selected_features}
-                    
+
                         # Convertir todos los tipos a str, int o float según sea necesario
                         def convert_to_json_serializable(value):
                             if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
@@ -119,10 +119,10 @@ if openai_api_key:
                             if isinstance(value, (int, float)):
                                 return value  # Int y float normales no necesitan conversión
                             return str(value)  # Convertir otros tipos a string
-                    
+
                         # Aplicar la conversión
                         common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
-                    
+                        
                         # Crear el mensaje para el API de OpenAI
                         try:
                             response = openai.ChatCompletion.create(
@@ -135,12 +135,12 @@ if openai_api_key:
                                     }
                                 ]
                             )
-                    
+                            
                             # Obtener y mostrar la recomendación
                             recommendation = response.choices[0].message['content'].strip()
                             st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
                             st.write(recommendation)
-                    
+
                             # Agregar input para preguntas adicionales
                             question = st.text_input(f"Pregunta adicional para el Perfil {perfil}", "")
                             if question:
@@ -156,5 +156,7 @@ if openai_api_key:
                                 st.write(f"**Respuesta a la pregunta para el Perfil {perfil}:**")
                                 st.write(follow_up_answer)
 
-        except Exception as e:
-        st.error(f"Error en la solicitud a la API de OpenAI: {e}")
+                        except Exception as e:
+                            st.error(f"Error en la solicitud a la API de OpenAI: {e}")
+else:
+    st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
