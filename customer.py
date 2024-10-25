@@ -110,8 +110,10 @@ if gemini_api_key:
                     # Aplicar la conversión
                     common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
                     
+                    # Log para verificar los tipos convertidos
                     st.write(f"### Perfil {perfil}")
                     st.write("Características comunes:", common_features)
+                    st.write("Tipos de datos en common_features:", {k: type(v) for k, v in common_features.items()})  # LOGGING
 
                     # Simular llamada a la API de Gemini
                     try:
@@ -125,7 +127,7 @@ if gemini_api_key:
                             recommendation = response.json().get("recommendation")
                             st.write(f"**Recomendación de Marketing para el Perfil {perfil}:** {recommendation}")
                         else:
-                            st.warning("No se pudo obtener una recomendación de la API de Gemini.")
+                            st.warning(f"No se pudo obtener una recomendación de la API de Gemini. Status: {response.status_code}, Detalle: {response.text}")
                     except Exception as e:
                         st.error(f"Error en la solicitud a la API de Gemini: {e}")
 else:
