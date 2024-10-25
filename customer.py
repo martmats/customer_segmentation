@@ -30,12 +30,12 @@ if openai_api_key:
     if uploaded_file:
         # Intentar cargar el archivo CSV con control de errores
         try:
-            data = pd.read_csv(uploaded_file, delimiter=',', error_bad_lines=False, encoding='utf-8')
+            data = pd.read_csv(uploaded_file, delimiter=',', on_bad_lines='skip', encoding='utf-8')
         except Exception as e:
             st.error(f"Error loading CSV: {e}")
             # Intentar con una codificación alternativa
             try:
-                data = pd.read_csv(uploaded_file, delimiter=',', error_bad_lines=False, encoding='latin1')
+                data = pd.read_csv(uploaded_file, delimiter=',', on_bad_lines='skip', encoding='latin1')
             except Exception as e:
                 st.error(f"Unable to read CSV with default methods. Error: {e}")
                 data = None
