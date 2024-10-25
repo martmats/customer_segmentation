@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.cluster import KMeans
+import numpy as np
 
 # Configuración de la página
 st.set_page_config(page_title="Recomendaciones de Marketing Personalizadas", layout="wide")
@@ -98,10 +99,12 @@ if gemini_api_key:
                     def convert_to_json_serializable(value):
                         if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
                             return str(value)  # Convertir timestamps a string
-                        if isinstance(value, (pd.Int64Dtype, pd.Float64Dtype, pd.UInt8Dtype)):
-                            return int(value)
+                        if isinstance(value, (np.integer, np.int32, np.int64)):
+                            return int(value)  # Convertir enteros numpy a int
+                        if isinstance(value, (np.floating, np.float32, np.float64)):
+                            return float(value)  # Convertir floats numpy a float
                         if isinstance(value, (int, float)):
-                            return value
+                            return value  # Int y float normales no necesitan conversión
                         return str(value)  # Convertir otros tipos a string
                     
                     # Aplicar la conversión
