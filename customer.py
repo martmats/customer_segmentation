@@ -137,5 +137,34 @@ if uploaded_file:
 
                         except Exception as e:
                             st.error(f"Error en la solicitud a la API de OpenAI: {e}")
+
+                # Nueva funcionalidad para hacer preguntas sobre los datos
+                st.subheader("Pregúntale a los datos")
+                question = st.text_input("Escribe tu pregunta sobre los datos")
+
+                # Botón para hacer preguntas
+                if question and openai_api_key and st.button("Obtener Respuesta a la Pregunta"):
+                    # Crear un resumen de los datos seleccionados para análisis
+                    data_summary = data[selected_features].describe(include='all').to_string()
+
+                    # Crear el mensaje para el API de OpenAI con la pregunta y el resumen de datos
+                    try:
+                        response = openai.ChatCompletion.create(
+                            model="gpt-3.5-turbo",
+                            messages=[
+                                {"role": "system", "content": "Eres un asistente de datos experto."},
+                                {
+                                    "role": "user",
+                                    "content": f"Los datos disponibles son:\n{data_summary}\nLa pregunta es: {question}."
+                                }
+                            ]
+                        )
+                        # Obtener y mostrar la respuesta
+                        answer = response.choices[0].message['content'].strip()
+                        st.write(f"### Respuesta: {answer}")
+
+                    except Exception as e:
+                        st.error(f"Error en la solicitud a la API de OpenAI: {e}")
 else:
     st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
+
