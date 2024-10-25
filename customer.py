@@ -128,10 +128,10 @@ if openai_api_key:
                             response = openai.ChatCompletion.create(
                                 model="gpt-3.5-turbo",
                                 messages=[
-                                    {"role": "system", "content": "Eres un experto en marketing."},
+                                    {"role": "system", "content": "Eres un experto estratega y analista de datos que trabajas en una consultoria de marketing."},
                                     {
                                         "role": "user",
-                                        "content": f"Dado el siguiente perfil de clientes: {common_features}, por favor proporciona una recomendación de marketing dirigida a este perfil."
+                                        "content": f"Dado el siguiente perfil de clientes: {common_features}, por favor proporciona una recomendación de marketing digital dirigida a este perfil, una vez finalizado cada perfil pregunta si quiere saber algo mas acerca de sus datos"
                                     }
                                 ]
                             )
