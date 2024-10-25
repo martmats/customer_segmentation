@@ -1,18 +1,19 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.cluster import KMeans
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
 
 # Configuración de la página
-st.set_page_config(page_title="Segmentación de Clientes Personalizada", layout="wide")
+st.set_page_config(page_title="Segmentación de Clientes Elegante", layout="wide")
 
 # Título de la aplicación
-st.title("Segmentación de Clientes Personalizada")
+st.title("Segmentación de Clientes Personalizada con Gráficos Elegantes")
 
 # Cargar archivo CSV
 st.sidebar.header("Carga tus datos de clientes")
@@ -36,13 +37,15 @@ if uploaded_file:
     if selected_features:
         st.subheader(f"Análisis basado en las columnas seleccionadas: {', '.join(selected_features)}")
 
-        # Mostrar visualizaciones interactivas usando Plotly
+        # Mostrar visualizaciones interactivas usando Plotly con colores atractivos
         for feature in selected_features:
             if data[feature].dtype == 'object' or len(data[feature].unique()) < 10:  # Si es categórica o tiene pocos valores únicos
-                fig = px.bar(data, x=feature, title=f"Distribución de {feature}")
+                fig = px.bar(data, x=feature, color=feature, title=f"Distribución de {feature}", 
+                             color_discrete_sequence=px.colors.qualitative.Vivid)
                 st.plotly_chart(fig)
             else:
-                fig = px.histogram(data, x=feature, nbins=20, title=f"Distribución de {feature}")
+                fig = px.histogram(data, x=feature, nbins=20, title=f"Distribución de {feature}",
+                                   color_discrete_sequence=px.colors.sequential.Plasma)
                 st.plotly_chart(fig)
         
         # Filtrar las columnas categóricas y numéricas
@@ -57,34 +60,44 @@ if uploaded_file:
             ]
         )
         
-        # Aplicar K-means para la segmentación
-        st.sidebar.header("Segmentación")
-        n_clusters = st.sidebar.slider("Selecciona el número de clusters", min_value=2, max_value=10, value=3)
+        # Asegurarse de imputar valores faltantes
+        data_selected = data[selected_features].copy()
+        imputer = SimpleImputer(strategy='mean')  # Imputar valores faltantes en numéricos
+        data_selected[numerical_features] = imputer.fit_transform(data_selected[numerical_features])
         
-        if st.sidebar.button("Aplicar Segmentación"):
-            # Crear un pipeline que aplique el preprocesamiento y K-means
-            kmeans = Pipeline(steps=[('preprocessor', preprocessor), ('kmeans', KMeans(n_clusters=n_clusters, random_state=42))])
-            kmeans.fit(data[selected_features])
-            data['Cluster'] = kmeans.named_steps['kmeans'].labels_
+        # Verificar que no haya valores NaN o infinitos
+        if data_selected.isnull().sum().sum() == 0:
+            # Aplicar K-means para la segmentación
+            st.sidebar.header("Segmentación")
+            n_clusters = st.sidebar.slider("Selecciona el número de clusters", min_value=2, max_value=10, value=3)
             
-            st.subheader("Resultados de la Segmentación")
-            st.write("Los clientes han sido agrupados en los siguientes clusters:")
-            st.dataframe(data[['Cluster'] + selected_features].head())
-            
-            # Gráfico de clusters (si hay al menos dos características numéricas)
-            if len(numerical_features) >= 2:
-                fig = px.scatter(data, x=numerical_features[0], y=numerical_features[1], color='Cluster', title="Clusters de Clientes")
-                st.plotly_chart(fig)
-            
-            # Visualización de clusters usando Pairplot
-            st.subheader("Visualización detallada de los Clusters")
-            if len(selected_features) > 1:
-                sns.pairplot(data, hue="Cluster", vars=selected_features[:3], palette="viridis")
-                st.pyplot(plt)
-            
-            st.write("""
-            ### Interpretación de los Clusters:
-            - Utiliza los grupos creados para identificar características comunes en los clientes.
-            - Ejemplo: Si descubres que un cluster está dominado por mujeres que poseen un coche en una región específica, puedes crear campañas de marketing dirigidas a esas características.
-            """)
-
+            if st.sidebar.button("Aplicar Segmentación"):
+                # Crear un pipeline que aplique el preprocesamiento y K-means
+                kmeans = Pipeline(steps=[('preprocessor', preprocessor), ('kmeans', KMeans(n_clusters=n_clusters, random_state=42))])
+                kmeans.fit(data_selected)
+                data['Cluster'] = kmeans.named_steps['kmeans'].labels_
+                
+                st.subheader("Resultados de la Segmentación")
+                st.write("Los clientes han sido agrupados en los siguientes clusters:")
+                st.dataframe(data[['Cluster'] + selected_features].head())
+                
+                # Gráfico de clusters (si hay al menos dos características numéricas)
+                if len(numerical_features) >= 2:
+                    fig = px.scatter(data, x=numerical_features[0], y=numerical_features[1], color='Cluster',
+                                     color_continuous_scale=px.colors.sequential.Inferno, title="Clusters de Clientes")
+                    st.plotly_chart(fig)
+                
+                # Visualización de clusters usando Pairplot de Seaborn
+                st.subheader("Visualización detallada de los Clusters con Seaborn")
+                if len(selected_features) > 1:
+                    plt.figure(figsize=(10, 6))
+                    sns.pairplot(data, hue="Cluster", vars=numerical_features[:3], palette="coolwarm")
+                    st.pyplot(plt)
+                
+                st.write("""
+                ### Interpretación de los Clusters:
+                - Utiliza los grupos creados para identificar características comunes en los clientes.
+                - Ejemplo: Si descubres que un cluster está dominado por mujeres que poseen un coche en una región específica, puedes crear campañas de marketing dirigidas a esas características.
+                """)
+        else:
+            st.error("Hay valores nulos o inválidos en los datos seleccionados. Verifica e intenta nuevamente.")
