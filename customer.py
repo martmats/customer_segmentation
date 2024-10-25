@@ -110,19 +110,22 @@ if openai_api_key:
                     # Aplicar la conversión
                     common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
                     
-                    # Crear el prompt para OpenAI GPT
-                    prompt = f"""Dado el siguiente perfil de clientes:
-                    {common_features},
-                    por favor proporciona una recomendación de marketing dirigida a este perfil."""
+                    # Crear el mensaje para el API de OpenAI
+                    messages = [
+                        {"role": "system", "content": "Eres un experto en marketing."},
+                        {
+                            "role": "user",
+                            "content": f"Dado el siguiente perfil de clientes: {common_features}, por favor proporciona una recomendación de marketing dirigida a este perfil."
+                        }
+                    ]
                     
                     # Llamada a la API de OpenAI para obtener la recomendación
                     try:
-                        response = openai.Completion.create(
-                            engine="text-davinci-003",
-                            prompt=prompt,
-                            max_tokens=150
+                        response = openai.ChatCompletion.create(
+                            model="gpt-3.5-turbo",
+                            messages=messages
                         )
-                        recommendation = response.choices[0].text.strip()
+                        recommendation = response['choices'][0]['message']['content'].strip()
                         st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
                         st.write(recommendation)
 
