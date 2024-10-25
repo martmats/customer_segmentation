@@ -111,19 +111,16 @@ if openai_api_key:
                     common_features = {k: convert_to_json_serializable(v) for k, v in common_features.items()}
                     
                     # Crear el mensaje para el API de OpenAI
-                    messages = [
-                        {"role": "system", "content": "Eres un experto en marketing."},
-                        {
-                            "role": "user",
-                            "content": f"Dado el siguiente perfil de clientes: {common_features}, por favor proporciona una recomendación de marketing dirigida a este perfil."
-                        }
-                    ]
-                    
-                    # Llamada a la API de OpenAI para obtener la recomendación
                     try:
-                        response = openai.ChatCompletion.create(
+                        response = openai.chat.completions.create(
                             model="gpt-3.5-turbo",
-                            messages=messages
+                            messages=[
+                                {"role": "system", "content": "Eres un experto en marketing."},
+                                {
+                                    "role": "user",
+                                    "content": f"Dado el siguiente perfil de clientes: {common_features}, por favor proporciona una recomendación de marketing dirigida a este perfil."
+                                }
+                            ]
                         )
                         recommendation = response['choices'][0]['message']['content'].strip()
                         st.write(f"### Recomendación de Marketing para el Perfil {perfil}")
@@ -133,3 +130,4 @@ if openai_api_key:
                         st.error(f"Error en la solicitud a la API de OpenAI: {e}")
 else:
     st.warning("Por favor, ingresa tu API Key de OpenAI para comenzar.")
+
